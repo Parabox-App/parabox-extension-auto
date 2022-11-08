@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Parabox Extension Auto</string>
+    <string name="main_switch_off">Enable Extension</string>
+    <string name="main_switch_on">Enable Extension</string>
+    <string name="force_stop_service">Force stop service</string>
+    <string name="service_status">Service Status</string>
+    <string name="status_error">An error occurred</string>
+    <string name="status_running">Service is running normally</string>
+    <string name="status_pause">Service is suspended</string>
+    <string name="status_loading">Service is starting</string>
+    <string name="foreground_service_notification_title">Foreground service running</string>
+    <string name="action_category">Action</string>
+    <string name="auto_login_title">Auto Login</string>
+    <string name="auto_login_subtitle">Start the service automatically when the main app starts</string>
+    <string name="foreground_service_title">Foreground Service</string>
+    <string name="foreground_service_subtitle">Run as a foreground service</string>
+    <string name="test_category">Test Only</string>
+    <string name="test_send_message">Send a test message</string>
+    <string name="command_success_toast">Command sent, return message: %1$s</string>
+    <string name="command_failed_toast">Command Lost, error code: %1$s</string>
+</resources>

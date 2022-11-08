@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Parabox Extension Auto</string>
+    <string name="main_switch_off">启用插件</string>
+    <string name="main_switch_on">启用插件</string>
+    <string name="force_stop_service">强制停止服务</string>
+    <string name="service_status">服务状态</string>
+    <string name="status_error">发生错误</string>
+    <string name="status_running">服务正常运行</string>
+    <string name="status_pause">服务已暂停</string>
+    <string name="status_loading">服务正在启动</string>
+    <string name="foreground_service_notification_title">前台服务正在运行</string>
+    <string name="action_category">行为</string>
+    <string name="auto_login_title">自动登录</string>
+    <string name="auto_login_subtitle">主应用启动时同时启动服务</string>
+    <string name="foreground_service_title">前台服务</string>
+    <string name="foreground_service_subtitle">以前台服务运行</string>
+    <string name="test_category">仅供测试</string>
+    <string name="test_send_message">发送测试消息</string>
+    <string name="command_success_toast">命令已发送，返回信息：%1$s</string>
+    <string name="command_failed_toast">命令发送失败，错误码：%1$s</string>
+</resources>
