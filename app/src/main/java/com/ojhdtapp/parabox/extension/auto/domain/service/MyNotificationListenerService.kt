@@ -1,6 +1,7 @@
 package com.ojhdtapp.parabox.extension.auto.domain.service
 
 import android.app.Notification
+import android.app.PendingIntent
 import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
@@ -18,25 +19,45 @@ class MyNotificationListenerService : NotificationListenerService() {
 
     private var notificationMessageListener: NotificationMessageListener? = null
 
-//    override fun onBind(intent: Intent?): IBinder? {
-//        super.onBind(intent)
-//        return NotificationListenerServiceBinder()
-//    }
+    fun sendReply(sbn: StatusBarNotification?, content: String): Boolean {
+        return sbn?.notification?.let {
+            val conversation = Notification.CarExtender(it).unreadConversation
+            conversation?.let {
+                val reply = it.replyPendingIntent
+                val remoteInput = it.remoteInput
+                val intent = Intent().apply {
+                    addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+                    putExtra(remoteInput.resultKey, content)
+                }
+                try {
+                    reply.send(this, 0, intent)
+                    true
+                } catch (e: PendingIntent.CanceledException) {
+                    e.printStackTrace()
+                    null
+                }
+            }
+        } ?: false
+    }
 
-    inner class NotificationListenerServiceBinder : Binder(){
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return if (intent?.action == "com.ojhdtapp.parabox.extension.auto.core.ConnService") NotificationListenerServiceBinder()
+        else super.onBind(intent)
+    }
+
+    inner class NotificationListenerServiceBinder : Binder() {
         fun getService(): MyNotificationListenerService = this@MyNotificationListenerService
     }
 
-    fun setMessageListener(listener: NotificationMessageListener){
+    fun setMessageListener(listener: NotificationMessageListener) {
         notificationMessageListener = listener
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        Log.d("parabox", "onNotificationPosted")
-        sbn?.notification?.extras?.let {
-            val title = it.getString(Notification.EXTRA_TITLE)
-            val content = it.getString(Notification.EXTRA_TEXT)
-            Log.d("parabox", "title: $title, content: $content")
+        if (sbn?.packageName in listOf<String>("com.ojhdtapp.parabox")) return
+        sbn?.let {
+            notificationMessageListener?.receiveSbn(it)
         }
     }
 
@@ -45,13 +66,11 @@ class MyNotificationListenerService : NotificationListenerService() {
     }
 
     override fun onListenerConnected() {
-        Log.d("parabox", "onListenerConnected")
         notificationMessageListener?.onStateChange(ParaboxKey.STATE_RUNNING, "监听服务正常运行")
     }
 
     override fun onListenerDisconnected() {
-        Log.d("parabox", "onListenerDisconnected")
         requestRebind(ComponentName(this, MyNotificationListenerService::class.java))
-        notificationMessageListener?.onStateChange(ParaboxKey.STATE_PAUSE, "监听服务已停止，尝试重新绑定")
+        notificationMessageListener?.onStateChange(ParaboxKey.STATE_LOADING, "监听服务停止，正在尝试重新绑定")
     }
 }

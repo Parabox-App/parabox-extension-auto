@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.Message
 import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
 import androidx.lifecycle.lifecycleScope
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxKey
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxMetadata
@@ -23,18 +24,31 @@ import com.ojhdtapp.paraboxdevelopmentkit.messagedto.message_content.getContentS
 import com.ojhdtapp.parabox.extension.auto.core.util.DataStoreKeys
 import com.ojhdtapp.parabox.extension.auto.core.util.NotificationUtil
 import com.ojhdtapp.parabox.extension.auto.core.util.dataStore
+import com.ojhdtapp.parabox.extension.auto.data.AppDatabase
 import com.ojhdtapp.parabox.extension.auto.domain.util.CustomKey
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ConnService : ParaboxService() {
     companion object {
         var connectionType = 0
     }
 
+    @Inject
+    lateinit var database: AppDatabase
+
     var notificationListenerService: MyNotificationListenerService? = null
     lateinit var serviceConnection: ServiceConnection
+
+    private fun receiveWXSbn(sbn: StatusBarNotification){
+        val time = sbn.postTime
+        sbn.id
+
+    }
 
     private fun receiveTestMessage(msg: Message, metadata: ParaboxMetadata) {
         // TODO 11 : Receive Message
@@ -104,10 +118,7 @@ class ConnService : ParaboxService() {
 
     override fun customHandleMessage(msg: Message, metadata: ParaboxMetadata) {
         when (msg.what) {
-            // TODO 6: Handle custom command
-            CustomKey.COMMAND_RECEIVE_TEST_MESSAGE -> {
-                receiveTestMessage(msg, metadata)
-            }
+
         }
     }
 
@@ -149,13 +160,24 @@ class ConnService : ParaboxService() {
 
             updateServiceState(ParaboxKey.STATE_LOADING, "尝试绑定监听服务")
 
-            val intent = Intent(this@ConnService, MyNotificationListenerService::class.java)
+            val intent = Intent( this@ConnService, MyNotificationListenerService::class.java).apply {
+                action = "com.ojhdtapp.parabox.extension.auto.core.ConnService"
+            }
             serviceConnection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                     notificationListenerService = (service as MyNotificationListenerService.NotificationListenerServiceBinder).getService().also {
                         it.setMessageListener(object: NotificationMessageListener{
                             override fun onStateChange(state: Int, message: String?) {
                                 updateServiceState(state, message)
+                            }
+
+                            override fun receiveSbn(sbn: StatusBarNotification) {
+                                when(sbn.packageName){
+                                    "com.tencent.mm" -> {
+                                        receiveWXSbn(sbn)
+                                    }
+                                    else -> {}
+                                }
                             }
                         })
                     }
@@ -169,7 +191,7 @@ class ConnService : ParaboxService() {
                     updateServiceState(ParaboxKey.STATE_ERROR, "绑定监听服务失败")
                 }
             }
-//            bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+            bindService(intent, serviceConnection, BIND_AUTO_CREATE)
         }
     }
 
