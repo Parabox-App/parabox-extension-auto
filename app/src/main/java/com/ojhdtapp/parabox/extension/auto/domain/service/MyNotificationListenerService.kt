@@ -23,7 +23,6 @@ class MyNotificationListenerService : NotificationListenerService() {
 
     fun sendReply(sbn: StatusBarNotification?, content: String): Boolean {
         return sbn?.notification?.let {
-            Log.d("parabox", "sendReply: $content")
             val conversation = Notification.CarExtender(it).unreadConversation
             conversation?.let {
                 val pendingReply = it.replyPendingIntent

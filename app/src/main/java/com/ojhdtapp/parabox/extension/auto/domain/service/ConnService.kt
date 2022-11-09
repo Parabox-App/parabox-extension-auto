@@ -13,6 +13,7 @@ import android.os.Message
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.lifecycleScope
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxKey
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxMetadata
@@ -26,6 +27,7 @@ import com.ojhdtapp.paraboxdevelopmentkit.messagedto.SendTargetType
 import com.ojhdtapp.paraboxdevelopmentkit.messagedto.message_content.PlainText
 import com.ojhdtapp.paraboxdevelopmentkit.messagedto.message_content.getContentString
 import com.ojhdtapp.parabox.extension.auto.core.util.DataStoreKeys
+import com.ojhdtapp.parabox.extension.auto.core.util.FileUtil
 import com.ojhdtapp.parabox.extension.auto.core.util.NotificationUtil
 import com.ojhdtapp.parabox.extension.auto.core.util.dataStore
 import com.ojhdtapp.parabox.extension.auto.data.AppDatabase
@@ -58,8 +60,23 @@ class ConnService : ParaboxService() {
         val title = sbn.notification.extras.getString(Notification.EXTRA_TITLE, "")
         val content = sbn.notification.extras.getString(Notification.EXTRA_TEXT, "")
         val icon = sbn.notification.extras.getParcelable<Icon>(Notification.EXTRA_LARGE_ICON)
+        val bitmap = icon?.loadDrawable(this)?.toBitmap()
         if (content.contains("撤回了一条消息")) return
         lifecycleScope.launch(Dispatchers.IO) {
+            val avatarUri = bitmap?.let {
+                FileUtil.getUriFromBitmap(baseContext, it).apply {
+                    grantUriPermission(
+                        "com.ojhdtapp.parabox",
+                        this,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                    grantUriPermission(
+                        "com.ojhdtapp.parabox",
+                        this,
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                }
+            }
             if (title.isNotBlank()) {
                 var contactId: Long? = database.wxContactDao.queryByName(title)?.id
                 if (contactId == null) {
@@ -74,12 +91,14 @@ class ConnService : ParaboxService() {
                     val profile = Profile(
                         name = if (isGroup) arr.first() else title,
                         avatar = null,
-                        id = id
+                        id = id,
+                        avatarUri = if (isGroup) null else avatarUri
                     )
                     val subjectProfile = Profile(
                         name = title,
                         avatar = null,
-                        id = id
+                        id = id,
+                        avatarUri = avatarUri
                     )
                     receiveMessage(
                         ReceiveMessageDto(
@@ -146,7 +165,6 @@ class ConnService : ParaboxService() {
 
     override suspend fun onSendMessage(dto: SendMessageDto): Boolean {
         val contentString = dto.contents.getContentString()
-        Log.d("parabox", dto.pluginConnection.toString())
         return wxSbnMap.get(dto.pluginConnection.id)?.let {
             notificationListenerService?.sendReply(it, contentString)
             true
