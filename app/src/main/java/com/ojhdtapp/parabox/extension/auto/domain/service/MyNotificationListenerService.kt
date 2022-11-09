@@ -2,10 +2,12 @@ package com.ojhdtapp.parabox.extension.auto.domain.service
 
 import android.app.Notification
 import android.app.PendingIntent
+import android.app.RemoteInput
 import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Binder
+import android.os.Bundle
 import android.os.IBinder
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -21,18 +23,21 @@ class MyNotificationListenerService : NotificationListenerService() {
 
     fun sendReply(sbn: StatusBarNotification?, content: String): Boolean {
         return sbn?.notification?.let {
+            Log.d("parabox", "sendReply: $content")
             val conversation = Notification.CarExtender(it).unreadConversation
             conversation?.let {
-                val reply = it.replyPendingIntent
+                val pendingReply = it.replyPendingIntent
                 val remoteInput = it.remoteInput
-                val intent = Intent().apply {
-                    addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-                    putExtra(remoteInput.resultKey, content)
-                }
+                val key = remoteInput.resultKey
+
                 try {
-                    reply.send(this, 0, intent)
+                    val localIntent = Intent()
+                    RemoteInput.addResultsToIntent(arrayOf(RemoteInput.Builder(key).build()), localIntent, Bundle().apply {
+                        putString(key, content)
+                    })
+                    pendingReply.send(baseContext, 0, localIntent)
                     true
-                } catch (e: PendingIntent.CanceledException) {
+                } catch (e: Exception) {
                     e.printStackTrace()
                     null
                 }

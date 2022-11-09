@@ -66,6 +66,7 @@ class ConnService : ParaboxService() {
                     contactId = database.wxContactDao.insert(WxContact(title))
                 }
                 contactId?.let { id ->
+                    Log.d("parabox", "receiveWXSbn: $id")
                     wxSbnMap.put(id, sbn)
                     val processedContent = content.replace("\\[\\d+条\\]".toRegex(), "")
                     val arr = processedContent.split(":".toRegex(), 2)
@@ -145,7 +146,8 @@ class ConnService : ParaboxService() {
 
     override suspend fun onSendMessage(dto: SendMessageDto): Boolean {
         val contentString = dto.contents.getContentString()
-        return wxSbnMap.get(dto.pluginConnection.objectId)?.let {
+        Log.d("parabox", dto.pluginConnection.toString())
+        return wxSbnMap.get(dto.pluginConnection.id)?.let {
             notificationListenerService?.sendReply(it, contentString)
             true
         } ?: false
