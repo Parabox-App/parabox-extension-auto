@@ -9,8 +9,8 @@ import com.ojhdtapp.parabox.extension.auto.domain.model.WxContact
 @Dao
 interface WxContactDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    fun insert(wxContact: WxContact): Long
+    suspend fun insert(wxContact: WxContact): Long
 
     @Query("SELECT * FROM wxcontact WHERE name = :name LIMIT 1")
-    fun queryByName(name: String): WxContact?
+    suspend fun queryByName(name: String): WxContact?
 }

@@ -1,14 +1,18 @@
 package com.ojhdtapp.parabox.extension.auto.domain.service
 
+import android.app.Notification
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Message
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxKey
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxMetadata
@@ -25,8 +29,10 @@ import com.ojhdtapp.parabox.extension.auto.core.util.DataStoreKeys
 import com.ojhdtapp.parabox.extension.auto.core.util.NotificationUtil
 import com.ojhdtapp.parabox.extension.auto.core.util.dataStore
 import com.ojhdtapp.parabox.extension.auto.data.AppDatabase
+import com.ojhdtapp.parabox.extension.auto.domain.model.WxContact
 import com.ojhdtapp.parabox.extension.auto.domain.util.CustomKey
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -44,72 +50,66 @@ class ConnService : ParaboxService() {
     var notificationListenerService: MyNotificationListenerService? = null
     lateinit var serviceConnection: ServiceConnection
 
-    private fun receiveWXSbn(sbn: StatusBarNotification){
+    var wxSbnMap = mutableMapOf<Long, StatusBarNotification>()
+
+    private fun receiveWXSbn(sbn: StatusBarNotification) {
         val time = sbn.postTime
-        sbn.id
-
-    }
-
-    private fun receiveTestMessage(msg: Message, metadata: ParaboxMetadata) {
-        // TODO 11 : Receive Message
-        val content = (msg.obj as Bundle).getString("content") ?: "No content"
-        val profile = Profile(
-            name = "anonymous",
-            avatar = "https://gravatar.loli.net/avatar/d41d8cd98f00b204e9800998ecf8427e?d=mp&v=1.5.1",
-            id = 1L
-        )
-        receiveMessage(
-            ReceiveMessageDto(
-                contents = listOf(PlainText(text = content)),
-                profile = profile,
-                subjectProfile = profile,
-                timestamp = System.currentTimeMillis(),
-                messageId = null,
-                pluginConnection = PluginConnection(
-                    connectionType = connectionType,
-                    sendTargetType = SendTargetType.USER,
-                    id = 1L
-                )
-            ),
-            onResult = {
-                // TODO 7 : Call sendCommandResponse when the job is done
-                if (it is ParaboxResult.Success) {
-                    sendCommandResponse(
-                        isSuccess = true,
-                        metadata = metadata,
-                        extra = Bundle().apply {
-                            putString(
-                                "message",
-                                "Message received at ${System.currentTimeMillis()}"
-                            )
-                        }
+        Log.d("parabox", "receiveWXSbn: $time")
+        val title = sbn.notification.extras.getString(Notification.EXTRA_TITLE, "")
+        val content = sbn.notification.extras.getString(Notification.EXTRA_TEXT, "")
+        val icon = sbn.notification.extras.getParcelable<Icon>(Notification.EXTRA_LARGE_ICON)
+        if (content.contains("撤回了一条消息")) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (title.isNotBlank()) {
+                var contactId: Long? = database.wxContactDao.queryByName(title)?.id
+                if (contactId == null) {
+                    contactId = database.wxContactDao.insert(WxContact(title))
+                }
+                contactId?.let { id ->
+                    wxSbnMap.put(id, sbn)
+                    val processedContent = content.replace("\\[\\d+条\\]".toRegex(), "")
+                    val arr = processedContent.split(":".toRegex(), 2)
+                    val isGroup = arr.size > 1
+                    val profile = Profile(
+                        name = if (isGroup) arr.first() else title,
+                        avatar = null,
+                        id = id
                     )
-                } else {
-                    sendCommandResponse(
-                        isSuccess = false,
-                        metadata = metadata,
-                        errorCode = (it as ParaboxResult.Fail).errorCode
+                    val subjectProfile = Profile(
+                        name = title,
+                        avatar = null,
+                        id = id
+                    )
+                    receiveMessage(
+                        ReceiveMessageDto(
+                            contents = listOf(PlainText(arr.last())),
+                            profile = profile,
+                            subjectProfile = subjectProfile,
+                            timestamp = time,
+                            messageId = null,
+                            pluginConnection = PluginConnection(
+                                connectionType = connectionType,
+                                sendTargetType = if (isGroup) SendTargetType.GROUP else SendTargetType.USER,
+                                id = id
+                            )
+                        ),
+                        onResult = {
+                            Log.d("parabox", "receiveMessage result: $it")
+                        }
                     )
                 }
             }
-        )
+        }
     }
 
-    // TODO 9 : Call sendNotification function with NOTIFICATION_SHOW_TEST_MESSAGE_SNACKBAR
-    private fun showTestMessageSnackbar(message: String) {
-        sendNotification(CustomKey.NOTIFICATION_SHOW_TEST_MESSAGE_SNACKBAR, Bundle().apply {
-            putString("message", message)
-        })
-    }
-
-    private fun enableListener(){
+    private fun enableListener() {
         packageManager.setComponentEnabledSetting(
             ComponentName(baseContext, MyNotificationListenerService::class.java),
             PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP
         )
     }
 
-    private fun disableListener(){
+    private fun disableListener() {
         packageManager.setComponentEnabledSetting(
             ComponentName(baseContext, MyNotificationListenerService::class.java),
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP
@@ -136,7 +136,7 @@ class ConnService : ParaboxService() {
     }
 
     override suspend fun onRecallMessage(messageId: Long): Boolean {
-        return true
+        return false
     }
 
     override fun onRefreshMessage() {
@@ -145,8 +145,10 @@ class ConnService : ParaboxService() {
 
     override suspend fun onSendMessage(dto: SendMessageDto): Boolean {
         val contentString = dto.contents.getContentString()
-        showTestMessageSnackbar(contentString)
-        return true
+        return wxSbnMap.get(dto.pluginConnection.objectId)?.let {
+            notificationListenerService?.sendReply(it, contentString)
+            true
+        } ?: false
     }
 
     override fun onStartParabox() {
@@ -160,27 +162,29 @@ class ConnService : ParaboxService() {
 
             updateServiceState(ParaboxKey.STATE_LOADING, "尝试绑定监听服务")
 
-            val intent = Intent( this@ConnService, MyNotificationListenerService::class.java).apply {
+            val intent = Intent(this@ConnService, MyNotificationListenerService::class.java).apply {
                 action = "com.ojhdtapp.parabox.extension.auto.core.ConnService"
             }
             serviceConnection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                    notificationListenerService = (service as MyNotificationListenerService.NotificationListenerServiceBinder).getService().also {
-                        it.setMessageListener(object: NotificationMessageListener{
-                            override fun onStateChange(state: Int, message: String?) {
-                                updateServiceState(state, message)
-                            }
-
-                            override fun receiveSbn(sbn: StatusBarNotification) {
-                                when(sbn.packageName){
-                                    "com.tencent.mm" -> {
-                                        receiveWXSbn(sbn)
+                    notificationListenerService =
+                        (service as MyNotificationListenerService.NotificationListenerServiceBinder).getService()
+                            .also {
+                                it.setMessageListener(object : NotificationMessageListener {
+                                    override fun onStateChange(state: Int, message: String?) {
+                                        updateServiceState(state, message)
                                     }
-                                    else -> {}
-                                }
+
+                                    override fun receiveSbn(sbn: StatusBarNotification) {
+                                        when (sbn.packageName) {
+                                            "com.tencent.mm" -> {
+                                                receiveWXSbn(sbn)
+                                            }
+                                            else -> {}
+                                        }
+                                    }
+                                })
                             }
-                        })
-                    }
                     enableListener()
                     updateServiceState(ParaboxKey.STATE_RUNNING, "绑定监听服务成功")
                 }

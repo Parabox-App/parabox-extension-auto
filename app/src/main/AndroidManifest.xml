@@ -33,10 +33,10 @@
             android:value="Parabox" />
         <meta-data
             android:name="description"
-            android:value="Parabox Extension Auto" />
+            android:value="Notification monitoring combined with Android Auto features." />
         <meta-data
             android:name="plain_text_support"
-            android:value="2" />
+            android:value="1" />
         <meta-data
             android:name="image_support"
             android:value="0" />
