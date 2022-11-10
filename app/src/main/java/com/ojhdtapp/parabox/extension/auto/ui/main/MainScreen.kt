@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ojhdtapp.parabox.extension.auto.MainActivity
 import com.ojhdtapp.parabox.extension.auto.R
+import com.ojhdtapp.parabox.extension.auto.core.util.BrowserUtil
 import com.ojhdtapp.parabox.extension.auto.core.util.launchPlayStore
 import com.ojhdtapp.parabox.extension.auto.domain.util.ServiceStatus
 import com.ojhdtapp.parabox.extension.auto.ui.util.NormalPreference
@@ -84,6 +85,22 @@ fun MainScreen(
     var menuExpanded by remember {
         mutableStateOf(false)
     }
+
+    var showDialog by remember {
+        mutableStateOf(false)
+    }
+
+    AppModelDialog(
+        showDialog = showDialog,
+        appModelList = viewModel.appModelStateFlow.collectAsState().value,
+        onValueChange = { target, value ->
+            viewModel.updateAppModelDisabledState(
+                target.id,
+                value
+            )
+        },
+        onDismiss = { showDialog = false }
+    )
 
     Scaffold(
         modifier = modifier,
@@ -140,7 +157,10 @@ fun MainScreen(
                 (context as MainActivity).isAndroidAutoInstalled()
             }
         }
-        LazyColumn(contentPadding = paddingValues) {
+        LazyColumn(
+            contentPadding = paddingValues,
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        ) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -197,7 +217,7 @@ fun MainScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "本插件将为 Parabox 添加通知消息监听，需首先安装主端",
+                            text = "本插件将为 Parabox 添加通知消息监听接入，需首先安装主端",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -276,11 +296,16 @@ fun MainScreen(
                 }
             }
             item {
+                NormalPreference(title = "对指定应用禁用监听", subtitle = "对于某些不需要监听通知的应用，可于此处禁用") {
+                    showDialog = true
+                }
+            }
+            item {
                 PreferencesCategory(text = "关于")
             }
             item {
                 NormalPreference(title = "版本", subtitle = viewModel.appVersion) {
-
+                    BrowserUtil.launchURL(context, "https://github.com/Parabox-App/parabox-extension-auto")
                 }
             }
         }

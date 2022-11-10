@@ -9,16 +9,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ojhdtapp.parabox.extension.auto.core.util.DataStoreKeys
 import com.ojhdtapp.parabox.extension.auto.core.util.dataStore
+import com.ojhdtapp.parabox.extension.auto.data.AppDatabase
+import com.ojhdtapp.parabox.extension.auto.domain.model.AppModelDisabledUpdate
 import com.ojhdtapp.parabox.extension.auto.domain.util.ServiceStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.IOException
 import javax.inject.Inject
@@ -26,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    val database: AppDatabase,
 ) : ViewModel() {
     // UiEvent
     private val _uiEventFlow = MutableSharedFlow<UiEvent>()
@@ -97,14 +95,28 @@ class MainViewModel @Inject constructor(
     }
 
     private val _refreshingKey = mutableStateOf<Int>(0)
-    val refreshingKey : State<Int> = _refreshingKey
-    fun refreshKey(){
+    val refreshingKey: State<Int> = _refreshingKey
+    fun refreshKey() {
         _refreshingKey.value = _refreshingKey.value + 1
+    }
+
+    val appModelStateFlow = database.appModelDao.getAll().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    fun updateAppModelDisabledState(id: Long, value: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            database.appModelDao.updateDisabledState(
+                AppModelDisabledUpdate(id, value)
+            )
+        }
     }
 
     val appVersion = com.ojhdtapp.parabox.extension.auto.BuildConfig.VERSION_NAME
 }
 
-sealed interface UiEvent{
-    data class ShowSnackbar(val message: String): UiEvent
+sealed interface UiEvent {
+    data class ShowSnackbar(val message: String) : UiEvent
 }

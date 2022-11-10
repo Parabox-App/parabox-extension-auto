@@ -2,7 +2,13 @@ package com.ojhdtapp.parabox.extension.auto.core.util
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import android.net.Uri
+import android.os.Build
 import androidx.core.content.FileProvider
 import com.ojhdtapp.parabox.extension.auto.BuildConfig
 import java.io.ByteArrayOutputStream
@@ -14,12 +20,53 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
 
+
 object FileUtil {
-    fun getUriFromBitmap(context: Context, bm: Bitmap): Uri? {
+
+    fun getAppIcon(context: Context, packageName: String): Bitmap? {
+        try {
+            val drawable = context.packageManager.getApplicationIcon(packageName)
+            if (drawable is BitmapDrawable) {
+                return drawable.bitmap
+            } else if (drawable is AdaptiveIconDrawable) {
+                val drr = arrayOfNulls<Drawable>(2)
+                drr[0] = drawable.background
+                drr[1] = drawable.foreground
+                val layerDrawable = LayerDrawable(drr)
+                val width = layerDrawable.intrinsicWidth
+                val height = layerDrawable.intrinsicHeight
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                layerDrawable.setBounds(0, 0, canvas.width, canvas.height)
+                layerDrawable.draw(canvas)
+                return bitmap
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    fun getSmallIcon(context: Context, pkgName: String?, id: Int): Bitmap? {
+        var smallIcon: Bitmap? = null
+        val remotePkgContext: Context
+        try {
+            remotePkgContext = context.createPackageContext(pkgName, 0)
+            val drawable = remotePkgContext.resources.getDrawable(id)
+            if (drawable != null) {
+                smallIcon = (drawable as BitmapDrawable).bitmap
+            }
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+        return smallIcon
+    }
+
+    fun getUriFromBitmap(context: Context, bm: Bitmap, name: String): Uri? {
         val targetDir = File(context.externalCacheDir, "bm")
         if (!targetDir.exists()) targetDir.mkdirs()
         val tempFile =
-            File(targetDir, "temp_${System.currentTimeMillis().toDateAndTimeString()}.png")
+            File(targetDir, "temp_${name}.png")
         val bytes = ByteArrayOutputStream()
         bm.compress(Bitmap.CompressFormat.PNG, 100, bytes)
         val bitmapData = bytes.toByteArray()

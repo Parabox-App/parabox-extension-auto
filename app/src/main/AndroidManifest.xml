@@ -5,10 +5,16 @@
     <queries>
         <package android:name="com.ojhdtapp.parabox" />
         <package android:name="com.google.android.projection.gearhead" />
+        <package android:name="com.google.android.apps.messaging"/>
+        <package android:name="com.google.android.gm"/>
+        <package android:name="com.google.android.youtube"/>
+        <package android:name="com.tencent.mobileqq"/>
+        <package android:name="com.tencent.mm"/>
     </queries>
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
 
     <application
         android:name=".core.HiltApplication"

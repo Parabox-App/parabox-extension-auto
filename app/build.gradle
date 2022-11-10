@@ -66,6 +66,9 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
     implementation "com.google.android.material:material:1.8.0-alpha02"
 
+    // Chrome Custom Tab
+    implementation "androidx.browser:browser:1.4.0"
+
     // Room
     def room_version = "2.4.3"
     implementation "androidx.room:room-runtime:$room_version"
@@ -74,7 +77,7 @@ dependencies {
     implementation "androidx.room:room-ktx:$room_version"
 
     // Development Kit
-    implementation 'com.ojhdt:parabox-development-kit:1.0.12-SNAPSHOT'
+    implementation 'com.ojhdt:parabox-development-kit:1.0.5'
 
     // DataStore
     implementation "androidx.datastore:datastore-preferences:1.0.0"
@@ -86,6 +89,10 @@ dependencies {
 
     // Accompanist
     implementation "com.google.accompanist:accompanist-systemuicontroller:0.27.0"
+
+    // Coroutine Lifecycle Scopes
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
 
     // ViewModel
     def lifecycle_version = "2.6.0-alpha02"
