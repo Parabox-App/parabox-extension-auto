@@ -74,6 +74,28 @@ class ConnService : ParaboxService() {
             }
         }
         lifecycleScope.launch(Dispatchers.IO) {
+            val appModel: AppModel =
+                database.appModelDao.queryByPackageName(sbn.packageName) ?: run {
+                    val ai = try {
+                        packageManager.getApplicationInfo(sbn.packageName, 0)
+                    } catch (e: NameNotFoundException) {
+                        null
+                    }
+                    val appName = ai?.let { packageManager.getApplicationLabel(it).toString() }
+                    database.appModelDao.insert(
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                        )
+                    ).let {
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                            id = it
+                        )
+                    }
+                }
+            if (appModel.disabled) return@launch
             val avatarUri = bitmap?.let {
                 FileUtil.getUriFromBitmap(baseContext, it, title).apply {
                     grantUriPermission(
@@ -102,10 +124,113 @@ class ConnService : ParaboxService() {
                     name = if (isGroup) arr.first() else title,
                     avatar = null,
                     id = null,
-                    avatarUri = if (isGroup) wxIconUri else avatarUri
+                    avatarUri = null
                 )
                 val subjectProfile = Profile(
                     name = title,
+                    avatar = null,
+                    id = id,
+                    avatarUri = avatarUri
+                )
+                receiveMessage(
+                    ReceiveMessageDto(
+                        contents = listOf(PlainText(arr.last())),
+                        profile = profile,
+                        subjectProfile = subjectProfile,
+                        timestamp = time,
+                        messageId = null,
+                        pluginConnection = PluginConnection(
+                            connectionType = connectionType,
+                            sendTargetType = if (isGroup) SendTargetType.GROUP else SendTargetType.USER,
+                            id = id
+                        )
+                    ),
+                    onResult = {
+                        Log.d("parabox", "receiveMessage result: $it")
+                    }
+                )
+            }
+        }
+    }
+
+    private fun receiveQQSbn(sbn: StatusBarNotification) {
+        val time = sbn.postTime
+        val title = sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString()
+        val processedTitle = title.replace(" \\(\\d+条新消息\\)".toRegex(), "")
+        val content =
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString()
+        if (content.contains("正在语音通话") || content.contains("等待大家加入")) return
+        Log.d("parabox", "title:$title, processed: $processedTitle, content:$content")
+        val icon = sbn.notification.extras.getParcelable<Icon>(Notification.EXTRA_LARGE_ICON)
+        val bitmap = icon?.loadDrawable(this)?.toBitmap()
+        val qqIconBitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)
+        val qqIconUri = qqIconBitmap?.let {
+            FileUtil.getUriFromBitmap(baseContext, it, "QQ").apply {
+                grantUriPermission(
+                    "com.ojhdtapp.parabox",
+                    this,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                grantUriPermission(
+                    "com.ojhdtapp.parabox",
+                    this,
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
+        }
+        lifecycleScope.launch(Dispatchers.IO) {
+            val appModel: AppModel =
+                database.appModelDao.queryByPackageName(sbn.packageName) ?: run {
+                    val ai = try {
+                        packageManager.getApplicationInfo(sbn.packageName, 0)
+                    } catch (e: NameNotFoundException) {
+                        null
+                    }
+                    val appName = ai?.let { packageManager.getApplicationLabel(it).toString() }
+                    database.appModelDao.insert(
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                        )
+                    ).let {
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                            id = it
+                        )
+                    }
+                }
+            if (appModel.disabled) return@launch
+            val avatarUri = bitmap?.let {
+                FileUtil.getUriFromBitmap(baseContext, it, processedTitle).apply {
+                    grantUriPermission(
+                        "com.ojhdtapp.parabox",
+                        this,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                    grantUriPermission(
+                        "com.ojhdtapp.parabox",
+                        this,
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                }
+            }
+            if (processedTitle.isNotBlank()) {
+                var contactId: Long? = database.wxContactDao.queryByName(processedTitle)?.id
+                if (contactId == null) {
+                    contactId = database.wxContactDao.insert(WxContact(processedTitle))
+                }
+                val id = contactId + 10000
+                val arr = content.split(":".toRegex(), 2)
+                val isGroup = arr.size > 1
+                val profile = Profile(
+                    name = if (isGroup) arr.first() else processedTitle,
+                    avatar = null,
+                    id = null,
+                    avatarUri = null
+                )
+                val subjectProfile = Profile(
+                    name = processedTitle,
                     avatar = null,
                     id = id,
                     avatarUri = avatarUri
@@ -149,11 +274,17 @@ class ConnService : ParaboxService() {
                         null
                     }
                     val appName = ai?.let { packageManager.getApplicationLabel(it).toString() }
-                    AppModel(
-                        packageName = sbn.packageName,
-                        appName = appName ?: "Unknown",
-                    ).also {
-                        database.appModelDao.insert(it)
+                    database.appModelDao.insert(
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                        )
+                    ).let {
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                            id = it
+                        )
                     }
                 }
             if (appModel.disabled) return@launch
@@ -222,11 +353,17 @@ class ConnService : ParaboxService() {
                         null
                     }
                     val appName = ai?.let { packageManager.getApplicationLabel(it).toString() }
-                    AppModel(
-                        packageName = sbn.packageName,
-                        appName = appName ?: "Unknown",
-                    ).also {
-                        database.appModelDao.insert(it)
+                    database.appModelDao.insert(
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                        )
+                    ).let {
+                        AppModel(
+                            packageName = sbn.packageName,
+                            appName = appName ?: "Unknown",
+                            id = it
+                        )
                     }
                 }
             if (appModel.disabled) return@launch
@@ -349,12 +486,14 @@ class ConnService : ParaboxService() {
                                             "com.tencent.mm" -> {
                                                 receiveWXSbn(sbn)
                                             }
+                                            "com.tencent.mobileqq" -> {
+                                                receiveQQSbn(sbn)
+                                            }
                                             in listOf<String>(
                                                 "com.google.android.apps.messaging",
                                                 "com.android.mms",
                                                 "com.google.android.gm",
                                                 "com.google.android.youtube",
-                                                "com.tencent.mobileqq"
                                             ) -> {
                                                 receiveConversationSbn(sbn)
                                             }
