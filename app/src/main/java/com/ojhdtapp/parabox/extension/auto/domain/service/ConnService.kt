@@ -13,6 +13,7 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.lifecycleScope
+import com.ojhdtapp.parabox.extension.auto.R
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxKey
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxMetadata
 import com.ojhdtapp.paraboxdevelopmentkit.connector.ParaboxService
@@ -25,6 +26,7 @@ import com.ojhdtapp.paraboxdevelopmentkit.messagedto.message_content.PlainText
 import com.ojhdtapp.paraboxdevelopmentkit.messagedto.message_content.getContentString
 import com.ojhdtapp.parabox.extension.auto.core.util.DataStoreKeys
 import com.ojhdtapp.parabox.extension.auto.core.util.FileUtil
+import com.ojhdtapp.parabox.extension.auto.core.util.FileUtil.getCircledBitmap
 import com.ojhdtapp.parabox.extension.auto.core.util.NotificationUtil
 import com.ojhdtapp.parabox.extension.auto.core.util.dataStore
 import com.ojhdtapp.parabox.extension.auto.data.AppDatabase
@@ -57,22 +59,22 @@ class ConnService : ParaboxService() {
             sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString()
         if (content.contains("撤回了一条消息")) return
         val icon = sbn.notification.extras.getParcelable<Icon>(Notification.EXTRA_LARGE_ICON)
-        val bitmap = icon?.loadDrawable(this)?.toBitmap()
-        val wxIconBitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)
-        val wxIconUri = wxIconBitmap?.let {
-            FileUtil.getUriFromBitmap(baseContext, it, "微信").apply {
-                grantUriPermission(
-                    "com.ojhdtapp.parabox",
-                    this,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-                grantUriPermission(
-                    "com.ojhdtapp.parabox",
-                    this,
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
-            }
-        }
+        val bitmap = icon?.loadDrawable(this)?.toBitmap()?.getCircledBitmap()
+//        val wxIconBitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)?.getCircledBitmap()
+//        val wxIconUri = wxIconBitmap?.let {
+//            FileUtil.getUriFromBitmap(baseContext, it, "微信").apply {
+//                grantUriPermission(
+//                    "com.ojhdtapp.parabox",
+//                    this,
+//                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+//                )
+//                grantUriPermission(
+//                    "com.ojhdtapp.parabox",
+//                    this,
+//                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+//                )
+//            }
+//        }
         lifecycleScope.launch(Dispatchers.IO) {
             val appModel: AppModel =
                 database.appModelDao.queryByPackageName(sbn.packageName) ?: run {
@@ -124,7 +126,7 @@ class ConnService : ParaboxService() {
                     name = if (isGroup) arr.first() else title,
                     avatar = null,
                     id = null,
-                    avatarUri = null
+                    avatarUri = avatarUri
                 )
                 val subjectProfile = Profile(
                     name = title,
@@ -162,22 +164,22 @@ class ConnService : ParaboxService() {
         if (content.contains("正在语音通话") || content.contains("等待大家加入")) return
         Log.d("parabox", "title:$title, processed: $processedTitle, content:$content")
         val icon = sbn.notification.extras.getParcelable<Icon>(Notification.EXTRA_LARGE_ICON)
-        val bitmap = icon?.loadDrawable(this)?.toBitmap()
-        val qqIconBitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)
-        val qqIconUri = qqIconBitmap?.let {
-            FileUtil.getUriFromBitmap(baseContext, it, "QQ").apply {
-                grantUriPermission(
-                    "com.ojhdtapp.parabox",
-                    this,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-                grantUriPermission(
-                    "com.ojhdtapp.parabox",
-                    this,
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
-            }
-        }
+        val bitmap = icon?.loadDrawable(this)?.toBitmap()?.getCircledBitmap()
+//        val qqIconBitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)
+//        val qqIconUri = qqIconBitmap?.let {
+//            FileUtil.getUriFromBitmap(baseContext, it, "QQ").apply {
+//                grantUriPermission(
+//                    "com.ojhdtapp.parabox",
+//                    this,
+//                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+//                )
+//                grantUriPermission(
+//                    "com.ojhdtapp.parabox",
+//                    this,
+//                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+//                )
+//            }
+//        }
         lifecycleScope.launch(Dispatchers.IO) {
             val appModel: AppModel =
                 database.appModelDao.queryByPackageName(sbn.packageName) ?: run {
@@ -288,7 +290,7 @@ class ConnService : ParaboxService() {
                     }
                 }
             if (appModel.disabled) return@launch
-            val bitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)
+            val bitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)?.getCircledBitmap()
             val avatarUri = bitmap?.let {
                 FileUtil.getUriFromBitmap(baseContext, it, appModel.appName).apply {
                     grantUriPermission(
@@ -367,7 +369,7 @@ class ConnService : ParaboxService() {
                     }
                 }
             if (appModel.disabled) return@launch
-            val bitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)
+            val bitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)?.getCircledBitmap()
             val avatarUri = bitmap?.let {
                 FileUtil.getUriFromBitmap(baseContext, it, appModel.appName).apply {
                     grantUriPermission(
@@ -466,7 +468,7 @@ class ConnService : ParaboxService() {
                 NotificationUtil.startForegroundService(this@ConnService)
             }
 
-            updateServiceState(ParaboxKey.STATE_LOADING, "尝试绑定监听服务")
+            updateServiceState(ParaboxKey.STATE_LOADING, getString(R.string.binding_notification_listening_service))
 
             val intent = Intent(this@ConnService, MyNotificationListenerService::class.java).apply {
                 action = "com.ojhdtapp.parabox.extension.auto.core.ConnService"
@@ -494,6 +496,7 @@ class ConnService : ParaboxService() {
                                                 "com.android.mms",
                                                 "com.google.android.gm",
                                                 "com.google.android.youtube",
+                                                "org.telegram.messenger",
                                             ) -> {
                                                 receiveConversationSbn(sbn)
                                             }
@@ -505,13 +508,13 @@ class ConnService : ParaboxService() {
                                 })
                             }
                     enableListener()
-                    updateServiceState(ParaboxKey.STATE_RUNNING, "绑定监听服务成功")
+                    updateServiceState(ParaboxKey.STATE_RUNNING, getString(R.string.bing_notification_listening_service_success))
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {
                     notificationListenerService = null
                     disableListener()
-                    updateServiceState(ParaboxKey.STATE_ERROR, "绑定监听服务失败")
+                    updateServiceState(ParaboxKey.STATE_ERROR, getString(R.string.bind_notification_listening_service_failed))
                 }
             }
             bindService(intent, serviceConnection, BIND_AUTO_CREATE)

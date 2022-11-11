@@ -19,4 +19,19 @@
     <string name="test_send_message">发送测试消息</string>
     <string name="command_success_toast">命令已发送，返回信息：%1$s</string>
     <string name="command_failed_toast">命令发送失败，错误码：%1$s</string>
+    <string name="extension_notice">本插件将为 Parabox 添加通知消息监听接入，需首先安装主端</string>
+    <string name="notification_permission">通知使用权</string>
+    <string name="notification_permission_sub">授予监听通知所需的必要权限</string>
+    <string name="android_auto">特性拓展包</string>
+    <string name="android_auto_sub">借助 Android Auto 特性实现更多功能</string>
+    <string name="about">关于</string>
+    <string name="version">版本</string>
+    <string name="disable_listening">对指定应用禁用监听</string>
+    <string name="disable_listening_sub">对于某些不需要监听通知的应用，可于此处禁用</string>
+    <string name="app_list">应用列表</string>
+    <string name="no_notification_received">暂未收到任何通知</string>
+    <string name="done">完成</string>
+    <string name="binding_notification_listening_service">尝试绑定监听服务</string>
+    <string name="bind_notification_listening_service_failed">绑定监听服务失败</string>
+    <string name="bing_notification_listening_service_success">绑定监听服务成功</string>
 </resources>

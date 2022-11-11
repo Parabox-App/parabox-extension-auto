@@ -10,7 +10,7 @@
     <string name="status_loading">Service is starting</string>
     <string name="foreground_service_notification_title">Foreground service running</string>
     <string name="action_category">Action</string>
-    <string name="auto_login_title">Auto Login</string>
+    <string name="auto_login_title">Automatic log-in</string>
     <string name="auto_login_subtitle">Start the service automatically when the main app starts</string>
     <string name="foreground_service_title">Foreground Service</string>
     <string name="foreground_service_subtitle">Run as a foreground service</string>
@@ -18,4 +18,19 @@
     <string name="test_send_message">Send a test message</string>
     <string name="command_success_toast">Command sent, return message: %1$s</string>
     <string name="command_failed_toast">Command Lost, error code: %1$s</string>
+    <string name="extension_notice">This plugin will add notification message monitoring access to Parabox, you need to install the main client first.</string>
+    <string name="notification_permission_sub">Grant the necessary permissions to listen for notifications</string>
+    <string name="android_auto_sub">Do more with Android Auto features</string>
+    <string name="android_auto">Install Android Auto</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+    <string name="disable_listening">Disable listening for specified application</string>
+    <string name="disable_listening_sub">For some applications that do not need to monitor notifications, they can be disabled here</string>
+    <string name="notification_permission">Notification access</string>
+    <string name="done">Done</string>
+    <string name="no_notification_received">No notification received yet</string>
+    <string name="app_list">Application List</string>
+    <string name="bing_notification_listening_service_success">Succeed to bind notification listening service</string>
+    <string name="bind_notification_listening_service_failed">Failed to bind notification listening service</string>
+    <string name="binding_notification_listening_service">Attempt to bind listening service</string>
 </resources>

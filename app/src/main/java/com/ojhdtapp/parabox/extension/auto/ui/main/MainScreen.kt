@@ -217,7 +217,7 @@ fun MainScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "本插件将为 Parabox 添加通知消息监听接入，需首先安装主端",
+                            text = stringResource(R.string.extension_notice),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -247,7 +247,9 @@ fun MainScreen(
                 )
             }
             item {
-                NormalPreference(title = "通知使用权", subtitle = "授予监听通知所需的必要权限",
+                NormalPreference(
+                    title = stringResource(R.string.notification_permission),
+                    subtitle = stringResource(R.string.notification_permission_sub),
                     trailingIcon = {
                         if (permissionGranted.value) {
                             Icon(
@@ -273,7 +275,10 @@ fun MainScreen(
                 }
             }
             item {
-                NormalPreference(title = "特性拓展包", subtitle = "借助 Android Auto 特性实现更多功能",
+                NormalPreference(title = stringResource(R.string.android_auto),
+                    subtitle = stringResource(
+                        R.string.android_auto_sub
+                    ),
                     trailingIcon = {
                         if (androidAutoInstalled.value) {
                             Icon(
@@ -296,16 +301,26 @@ fun MainScreen(
                 }
             }
             item {
-                NormalPreference(title = "对指定应用禁用监听", subtitle = "对于某些不需要监听通知的应用，可于此处禁用") {
+                NormalPreference(
+                    title = stringResource(R.string.disable_listening), subtitle = stringResource(
+                        R.string.disable_listening_sub
+                    )
+                ) {
                     showDialog = true
                 }
             }
             item {
-                PreferencesCategory(text = "关于")
+                PreferencesCategory(text = stringResource(R.string.about))
             }
             item {
-                NormalPreference(title = "版本", subtitle = viewModel.appVersion) {
-                    BrowserUtil.launchURL(context, "https://github.com/Parabox-App/parabox-extension-auto")
+                NormalPreference(
+                    title = stringResource(R.string.version),
+                    subtitle = viewModel.appVersion
+                ) {
+                    BrowserUtil.launchURL(
+                        context,
+                        "https://github.com/Parabox-App/parabox-extension-auto"
+                    )
                 }
             }
         }

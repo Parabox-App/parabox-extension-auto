@@ -7,8 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ojhdtapp.parabox.extension.auto.R
 import com.ojhdtapp.parabox.extension.auto.domain.model.AppModel
 
 @Composable
@@ -24,11 +26,11 @@ fun AppModelDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = onDismiss) {
-                    Text(text = "完成")
+                    Text(text = stringResource(R.string.done))
                 }
             },
             title = {
-                Text(text = "应用列表")
+                Text(text = stringResource(R.string.app_list))
             },
             text = {
                 LazyColumn(
@@ -43,7 +45,7 @@ fun AppModelDialog(
                                     .height(160.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(text = "暂无会话")
+                                Text(text = stringResource(R.string.no_notification_received))
                             }
                         }
                     }
