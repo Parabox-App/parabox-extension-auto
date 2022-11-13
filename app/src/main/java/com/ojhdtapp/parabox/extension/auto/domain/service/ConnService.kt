@@ -54,10 +54,11 @@ class ConnService : ParaboxService() {
 
     private fun receiveWXSbn(sbn: StatusBarNotification) {
         val time = sbn.postTime
-        val title = sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString()
+        val title =
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString().trim()
         val content =
-            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString()
-        if (content.contains("撤回了一条消息")) return
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString().trim()
+        if (content.contains("撤回了一条消息") || title.isBlank() || content.isBlank()) return
         val icon = sbn.notification.extras.getParcelable<Icon>(Notification.EXTRA_LARGE_ICON)
         val bitmap = icon?.loadDrawable(this)?.toBitmap()?.getCircledBitmap()
 //        val wxIconBitmap = FileUtil.getAppIcon(baseContext, sbn.packageName)?.getCircledBitmap()
@@ -157,11 +158,12 @@ class ConnService : ParaboxService() {
 
     private fun receiveQQSbn(sbn: StatusBarNotification) {
         val time = sbn.postTime
-        val title = sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString()
-        val processedTitle = title.replace(" \\(\\d+条新消息\\)".toRegex(), "")
+        val title =
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString().trim()
+        val processedTitle = title.replace(" \\(\\d+条(以上)?新消息\\)".toRegex(), "").trim()
         val content =
-            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString()
-        if (content.contains("正在语音通话") || content.contains("等待大家加入")) return
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString().trim()
+        if (content.contains("正在语音通话") || content.contains("等待大家加入") || processedTitle.isBlank() || content.isBlank()) return
         Log.d("parabox", "title:$title, processed: $processedTitle, content:$content")
         val icon = sbn.notification.extras.getParcelable<Icon>(Notification.EXTRA_LARGE_ICON)
         val bitmap = icon?.loadDrawable(this)?.toBitmap()?.getCircledBitmap()
@@ -260,13 +262,15 @@ class ConnService : ParaboxService() {
 
     private fun receiveConversationSbn(sbn: StatusBarNotification) {
         val time = sbn.postTime
-        val title = sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString()
+        val title =
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString().trim()
         val content =
-            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString()
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString().trim()
 //        val smallIconId = sbn.notification.extras.getInt(Notification.EXTRA_SMALL_ICON, 0)
 //        val bitmap: Bitmap? = if(smallIconId == 0) null else {
 //            FileUtil.getSmallIcon(baseContext, sbn.packageName, smallIconId)
 //        }
+        if (title.isBlank() || content.isBlank()) return
         lifecycleScope.launch(Dispatchers.IO) {
             val appModel: AppModel =
                 database.appModelDao.queryByPackageName(sbn.packageName) ?: run {
@@ -339,13 +343,14 @@ class ConnService : ParaboxService() {
 
     private fun receiveOtherSbn(sbn: StatusBarNotification) {
         val time = sbn.postTime
-        val title = sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString()
+        val title = sbn.notification.extras.getCharSequence(Notification.EXTRA_TITLE, "").toString().trim()
         val content =
-            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString()
+            sbn.notification.extras.getCharSequence(Notification.EXTRA_TEXT, "").toString().trim()
 //        val smallIconId = sbn.notification.extras.getInt(Notification.EXTRA_SMALL_ICON, 0)
 //        val bitmap: Bitmap? = if(smallIconId == 0) null else {
 //            FileUtil.getSmallIcon(baseContext, sbn.packageName, smallIconId)
 //        }
+        if (title.isBlank() || content.isBlank()) return
         lifecycleScope.launch(Dispatchers.IO) {
             val appModel: AppModel =
                 database.appModelDao.queryByPackageName(sbn.packageName) ?: run {
@@ -468,7 +473,10 @@ class ConnService : ParaboxService() {
                 NotificationUtil.startForegroundService(this@ConnService)
             }
 
-            updateServiceState(ParaboxKey.STATE_LOADING, getString(R.string.binding_notification_listening_service))
+            updateServiceState(
+                ParaboxKey.STATE_LOADING,
+                getString(R.string.binding_notification_listening_service)
+            )
 
             val intent = Intent(this@ConnService, MyNotificationListenerService::class.java).apply {
                 action = "com.ojhdtapp.parabox.extension.auto.core.ConnService"
@@ -508,13 +516,19 @@ class ConnService : ParaboxService() {
                                 })
                             }
                     enableListener()
-                    updateServiceState(ParaboxKey.STATE_RUNNING, getString(R.string.bing_notification_listening_service_success))
+                    updateServiceState(
+                        ParaboxKey.STATE_RUNNING,
+                        getString(R.string.bing_notification_listening_service_success)
+                    )
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {
                     notificationListenerService = null
                     disableListener()
-                    updateServiceState(ParaboxKey.STATE_ERROR, getString(R.string.bind_notification_listening_service_failed))
+                    updateServiceState(
+                        ParaboxKey.STATE_ERROR,
+                        getString(R.string.bind_notification_listening_service_failed)
+                    )
                 }
             }
             bindService(intent, serviceConnection, BIND_AUTO_CREATE)
