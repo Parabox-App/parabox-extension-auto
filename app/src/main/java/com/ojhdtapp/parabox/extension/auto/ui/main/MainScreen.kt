@@ -168,7 +168,7 @@ fun MainScreen(
                 MainSwitch(
                     textOff = stringResource(id = R.string.main_switch_off),
                     textOn = stringResource(id = R.string.main_switch_on),
-                    checked = serviceStatus !is ServiceStatus.Stop,
+                    checked = serviceStatus !is ServiceStatus.Stop && serviceStatus !is ServiceStatus.Error,
                     onCheckedChange = {
 
                         if (it) {
@@ -189,7 +189,7 @@ fun MainScreen(
                             }
                         }
                     },
-                    enabled = serviceStatus is ServiceStatus.Stop || serviceStatus is ServiceStatus.Running
+                    enabled = serviceStatus is ServiceStatus.Stop || serviceStatus is ServiceStatus.Running || serviceStatus is ServiceStatus.Error
                 )
             }
             item {
