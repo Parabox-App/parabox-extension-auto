@@ -48,7 +48,7 @@ object NotificationUtil {
         )
         val notification: Notification =
             Notification.Builder(context, SERVICE_STATE_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_android_black_24dp)
+                .setSmallIcon(R.drawable.ic_outline_extension_24)
                 .setContentTitle(context.getString(R.string.foreground_service_notification_title))
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentIntent(pendingIntent)
@@ -70,7 +70,7 @@ object NotificationUtil {
         }
         val notification: Notification =
             Notification.Builder(context, SERVICE_STATE_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_android_black_24dp)
+                .setSmallIcon(R.drawable.ic_outline_extension_24)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setContentIntent(pendingIntent)
